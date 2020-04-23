@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+		<script src="/socket.io-client/dist/socket.io.js"></script>
+		<title>HLS</title>
+	</head>
+	<body>
+		<video playsinline id="local" controls preload="metadata" autoplay width="300"></video>
+		<video playsinline id="callee" controls preload="metadata" autoplay width="300"></video>
+	</body>
+	<script>
+		// FIXME: 안돌아가요
+		const RTC_CONFIGURATION = {
+			iceServers: [
+				{ urls: "stun:stun.l.google.com:19302" },
+				{
+					url: "turn:numb.viagenie.ca",
+					credential: "muazkh",
+					username: "webrtc@live.com",
+				},
+			],
+		};
+
+		let socket = io.connect("http://localhost:3000/");
+
+		let localVideo = document.getElementById("local");
+		let calleeVideo = document.getElementById("callee");
+		let stream;
+		let pc = new RTCPeerConnection(RTC_CONFIGURATION);
+
+		if (navigator.getDisplayMedia) {
+			stream = navigator.getDisplayMedia({ video: true });
+		} else if (navigator.mediaDevices.getDisplayMedia) {
+			stream = navigator.mediaDevices.getDisplayMedia({ video: true });
+		} else {
+			stream = navigator.mediaDevices.getUserMedia({ video: { mediaSource: "screen" } });
+		}
+		stream.then((data) => {
+			localVideo.srcObject = data;
+			pc.addStream(data);
+			pc.createOffer()
+				.then((offer) => {
+					return pc.setLocalDescription(offer);
+				})
+				.then(() => {
+					socket.emit("streamStart", pc.localDescription);
+				});
+		});
+		socket.on("streamView", (data) => {
+			pc.setRemoteDescription(data);
+		});
+
+		let callee = new RTCPeerConnection(RTC_CONFIGURATION);
+		callee.onaddstream = (event) => {
+			calleeVideo.srcObject = event.stream;
+		};
+		socket.on("streamStart", (data) => {
+			callee.setRemoteDescription(data);
+			callee
+				.createAnswer()
+				.then((answer) => {
+					return callee.setLocalDescription(answer);
+				})
+				.then(() => {
+					socket.emit("streamView", callee.localDescription);
+				});
+		});
+	</script>
+</html>
