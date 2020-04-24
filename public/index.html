@@ -9,10 +9,9 @@
 	</head>
 	<body>
 		<video playsinline id="local" controls preload="metadata" autoplay width="300"></video>
-		<video playsinline id="callee" controls preload="metadata" autoplay width="300"></video>
+		<video playsinline id="remote" controls preload="metadata" autoplay width="300"></video>
 	</body>
 	<script>
-		// FIXME: 안돌아가요
 		const RTC_CONFIGURATION = {
 			iceServers: [
 				{ urls: "stun:stun.l.google.com:19302" },
@@ -27,46 +26,52 @@
 		let socket = io.connect("http://localhost:3000/");
 
 		let localVideo = document.getElementById("local");
-		let calleeVideo = document.getElementById("callee");
-		let stream;
-		let pc = new RTCPeerConnection(RTC_CONFIGURATION);
+		let remoteVideo = document.getElementById("remote");
+		let media;
+		let localStream;
+		let pc1 = new RTCPeerConnection(RTC_CONFIGURATION);
+		let pc2 = new RTCPeerConnection(RTC_CONFIGURATION);
 
-		if (navigator.getDisplayMedia) {
-			stream = navigator.getDisplayMedia({ video: true });
-		} else if (navigator.mediaDevices.getDisplayMedia) {
-			stream = navigator.mediaDevices.getDisplayMedia({ video: true });
-		} else {
-			stream = navigator.mediaDevices.getUserMedia({ video: { mediaSource: "screen" } });
+		function selectDesktop() {
+			if (navigator.getDisplayMedia) {
+				return navigator.getDisplayMedia({ video: true });
+			} else if (navigator.mediaDevices.getDisplayMedia) {
+				return navigator.mediaDevices.getDisplayMedia({ video: true });
+			} else {
+				return navigator.mediaDevices.getUserMedia({ video: { mediaSource: "screen" } });
+			}
 		}
-		stream.then((data) => {
-			localVideo.srcObject = data;
-			pc.addStream(data);
-			pc.createOffer()
-				.then((offer) => {
-					return pc.setLocalDescription(offer);
-				})
-				.then(() => {
-					socket.emit("streamStart", pc.localDescription);
-				});
-		});
-		socket.on("streamView", (data) => {
-			pc.setRemoteDescription(data);
-		});
+		async function start() {
+			let stream = await selectDesktop();
+			localVideo.srcObject = stream;
+			localStream = stream;
 
-		let callee = new RTCPeerConnection(RTC_CONFIGURATION);
-		callee.onaddstream = (event) => {
-			calleeVideo.srcObject = event.stream;
-		};
-		socket.on("streamStart", (data) => {
-			callee.setRemoteDescription(data);
-			callee
-				.createAnswer()
-				.then((answer) => {
-					return callee.setLocalDescription(answer);
-				})
-				.then(() => {
-					socket.emit("streamView", callee.localDescription);
-				});
-		});
+			pc1.addEventListener("icecandidate", async (e) => {
+				console.log(e.candidate);
+				if (e.candidate) await pc2.addIceCandidate(e.candidate);
+			});
+			pc2.addEventListener("icecandidate", async (e) => {
+				console.log(e.candidate);
+				if (e.candidate) await pc1.addIceCandidate(e.candidate);
+			});
+
+			pc2.addEventListener("track", (e) => {
+				remoteVideo.srcObject = e.streams[0];
+			});
+
+			localStream.getTracks().forEach((track) => pc1.addTrack(track, localStream));
+
+			let offer = await pc1.createOffer({
+				offerToReceiveAudio: 1,
+				offerToReceiveVideo: 1,
+			});
+			await pc1.setLocalDescription(offer);
+			await pc2.setRemoteDescription(offer);
+
+			let answer = await pc2.createAnswer();
+			await pc2.setLocalDescription(answer);
+			await pc1.setRemoteDescription(answer);
+		}
+		start();
 	</script>
 </html>

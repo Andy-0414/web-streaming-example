@@ -7,7 +7,7 @@ app.use(express.static("public"));
 app.use(express.static("node_modules"));
 
 server.listen(3000, () => {
-	console.log("HLS server open");
+	console.log("stream server open");
 });
 
 io.on("connection", (socket) => {
