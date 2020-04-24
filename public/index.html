@@ -6,12 +6,52 @@
 		<link rel="manifest" href="manifest.json" />
 		<script src="/socket.io-client/dist/socket.io.js"></script>
 		<title>stream</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+			body {
+				display: flex;
+				flex-direction: column;
+				width: 100vw;
+				align-items: center;
+				background-color: #111111;
+			}
+			.box {
+				width: 100%;
+				max-width: 600px;
+				display: flex;
+				flex-direction: column;
+                margin: 10px;
+			}
+			.box video {
+				width: 100%;
+			}
+			.box button {
+				cursor: pointer;
+				padding: 20px;
+				background-color: black;
+				color: white;
+				border: none;
+
+				transition: 0.2s;
+			}
+			.box button:hover {
+				background-color: #222222;
+			}
+		</style>
 	</head>
 	<body>
-		<button id="Sender">Sender</button>
-		<video playsinline id="local" controls preload="metadata" autoplay width="300"></video>
-		<video playsinline id="remote" controls preload="metadata" autoplay width="300"></video>
-		<button id="Receiver">Receiver</button>
+		<div class="box">
+			<video playsinline id="local" controls preload="metadata" autoplay></video>
+			<button id="Sender">Sender</button>
+		</div>
+		<div class="box">
+			<video playsinline id="remote" controls preload="metadata" autoplay></video>
+			<button id="Receiver">Receiver</button>
+		</div>
 		<script src="main.js"></script>
 	</body>
 </html>
