@@ -11,11 +11,20 @@ server.listen(3000, () => {
 });
 
 io.on("connection", (socket) => {
-	console.log("connect");
-	socket.on("streamStart", (data) => {
-		socket.emit("streamStart", data);
+	socket.on("SenderSendIceCandidat", (data) => {
+		console.log("SenderSendIceCandidat:");
+		io.sockets.emit("SenderSendIceCandidat", data);
 	});
-	socket.on("streamView", (data) => {
-		socket.emit("streamView", data);
+	socket.on("ReceiverSendIceCandidat", (data) => {
+		console.log("ReceiverSendIceCandidat:");
+		io.sockets.emit("ReceiverSendIceCandidat", data);
+	});
+	socket.on("sendOffer", (data) => {
+		console.log("sendOffer:");
+		io.sockets.emit("sendOffer", data);
+	});
+	socket.on("sendAnswer", (data) => {
+		console.log("sendAnswer:");
+		io.sockets.emit("sendAnswer", data);
 	});
 });
