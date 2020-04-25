@@ -1,3 +1,12 @@
+// 이 사용자의 고유 코드 생성
+function uniqueID() {
+	function chr4() {
+		return Math.random().toString(16).slice(-4);
+	}
+	return chr4() + chr4() + "-" + chr4() + "-" + chr4() + "-" + chr4() + "-" + chr4() + chr4() + chr4();
+}
+const id = uniqueID();
+
 const RTC_CONFIGURATION = {
 	iceServers: [
 		{ url: "stun:stun1.l.google.com:19302" },
